@@ -1,0 +1,17 @@
+[Unit]
+Description=Celery Beat Service
+After=network.target
+After=redis.service
+
+[Service]
+Type=simple
+User=tactical
+Group=tactical
+EnvironmentFile=/app/conf/celery.conf
+WorkingDirectory=/app/offsite
+ExecStart=/bin/sh -c '${CELERY_BIN} beat -A ${CELERY_APP} --scheduler django_celery_beat.schedulers:DatabaseScheduler --pidfile=${CELERYBEAT_PID_FILE} --logfile=${CELERYBEAT_LOG_FILE} --loglevel=${CELERYD_LOG_LEVEL}'
+Restart=always
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,37 @@
+SECRET_KEY = "supersekret123456"
+
+DEBUG = False
+
+EDITING = False
+
+ALLOWED_HOSTS = ["*"]
+
+ADMIN_URL = "admin/"
+
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "changeme",
+        "USER": "changeme",
+        "PASSWORD": "changeme",
+        "HOST": "localhost",
+        "PORT": "5432",
+    }
+}
+
+REST_FRAMEWORK = {
+    "DATETIME_FORMAT": "%b-%d-%Y - %H:%M",
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    "DEFAULT_AUTHENTICATION_CLASSES": ("knox.auth.TokenAuthentication",),
+}
+
+if not DEBUG and not EDITING:
+    REST_FRAMEWORK.update(
+        {"DEFAULT_RENDERER_CLASSES": ("rest_framework.renderers.JSONRenderer",)}
+    )
+
+SALT_USERNAME = "changeme"
+SALT_PASSWORD = "changeme"
+REDIS_HOST = "localhost"
+SALT_HOST = "127.0.0.1"

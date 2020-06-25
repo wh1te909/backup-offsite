@@ -1,0 +1,17 @@
+[Unit]
+Description=django channels daemon
+After=network.target
+
+[Service]
+User=tactical
+Group=www-data
+WorkingDirectory=/app/offsite
+StandardOutput=append:/var/log/daphne/out.log
+StandardError=append:/var/log/daphne/err.log
+Environment="PATH=/app/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=/app/env/bin/daphne -u /app/daphne.sock -v 2 offsite.asgi:application
+Restart=always
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,15 @@
+[Unit]
+Description=offsite uwsgi daemon
+After=network.target
+
+[Service]
+User=tactical
+Group=www-data
+WorkingDirectory=/app/offsite
+Environment="PATH=/app/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=/app/env/bin/uwsgi --ini app.ini
+Restart=always
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target

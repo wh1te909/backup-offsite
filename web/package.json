@@ -1,0 +1,32 @@
+{
+  "name": "web",
+  "version": "0.0.4",
+  "description": "Tactical Offsite",
+  "productName": "Tactical Offsite",
+  "author": "Tactical Techs",
+  "private": true,
+  "scripts": {
+    "test": "echo \"No test specified\" && exit 0"
+  },
+  "dependencies": {
+    "@quasar/extras": "^1.8.2",
+    "axios": "^0.19.2",
+    "quasar": "^1.12.8",
+    "core-js": "^3.6.5",
+    "dotenv": "^8.2.0"
+  },
+  "devDependencies": {
+    "@quasar/app": "^2.0.1",
+    "@quasar/cli": "^1.1.0"
+  },
+  "engines": {
+    "node": ">= 10.18.1",
+    "npm": ">= 6.13.4",
+    "yarn": ">= 1.21.1"
+  },
+  "browserslist": [
+    "last 4 Chrome versions",
+    "last 3 Firefox versions",
+    "last 3 Edge versions"
+  ]
+}
