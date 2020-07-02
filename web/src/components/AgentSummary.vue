@@ -6,7 +6,7 @@
         <span class="text-overline text-subtitle1 text-uppercase text-grey-8 q-pa-sm">Sync Status:</span>
         <q-badge
           class="text-subtitle2"
-          :color="agent.size === agent.onsite_size ? 'positive' : 'negative'"
+          :color="agent.raw_size === agent.raw_onsite_size ? 'positive' : 'negative'"
         >{{ agent.size }} / {{ agent.onsite_size }}</q-badge>
       </q-item-label>
       <!-- full backups -->

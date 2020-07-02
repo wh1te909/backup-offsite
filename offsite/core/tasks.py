@@ -7,13 +7,17 @@ import base64
 import json
 import random
 import string
+from loguru import logger
 
 from django.db.models import Q
 from django.utils import timezone as djangotime
+from django.conf import settings
 
 from offsite.celery import app
 
 from .models import Agent, OffsiteJob, BackupJob
+
+logger.configure(**settings.LOG_CONFIG)
 
 
 @app.task
@@ -49,15 +53,13 @@ def gather_info_task():
         )
 
         if r == "error":
-            print("ERROR: Unable to contact agent")
-            sleep(0.5)
+            logger.error(f"Unable to contact agent {agent.hostname}")
             continue
 
         ret = r.json()["return"][0][agent.client.salt_id]
 
         if not isinstance(ret, dict):
-            print("ERROR: return type is not json")
-            sleep(0.5)
+            logger.error(f"{agent.hostname}: return type is not json")
             continue
 
         agent.details = ret
@@ -80,23 +82,22 @@ def monitor_offsites_task():
             )
 
             if r == "error":
-                print("ERROR: unable to contact agent")
+                logger.error(f"Unable to contact agent {agent.hostname}")
                 continue
 
             ret = r.json()["return"][0][job.agent.client.salt_id]
 
             if not isinstance(ret, bool):
-                print("ERROR: return type is not bool")
+                logger.error(f"{agent.hostname}: return type is not bool")
                 continue
 
             if ret:
-                # job is still running
                 continue
             else:
                 job.status = "completed"
                 job.finished = djangotime.now()
                 job.save(update_fields=["status", "finished"])
-
+                logger.info(f"{agent.hostname} offsite job completed")
                 sleep(1)
 
                 r = job.agent.salt_api_cmd(
@@ -156,16 +157,15 @@ def monitor_backups_task():
         r = agent.send_pub({"cmd": "info"}, 7)
 
         if r == "error":
-            print("unable to contact agent")
+            logger.error(f"Unable to contact agent {agent.hostname}")
             continue
 
         if r["procs"]:
             for proc in r["procs"]:
                 if proc["pid"] == job.pid and proc["name"] == job.proc_name:
-                    print(f"{agent.hostname} backup is still running")
                     continue
         else:
-            print(f"{agent.hostname} backup job finished")
+            logger.info(f"{agent.hostname} backup job completed")
             job.finished = djangotime.now()
             job.status = "completed"
             job.save(update_fields=["finished", "status"])
@@ -186,11 +186,13 @@ def incremental_backup_task(pk):
     r = agent.send_pub(msg, 7)
 
     if r == "error":
-        print(f"Unable to contact {agent.hostname} for scheduled incremental backup")
+        logger.error(
+            f"Unable to contact {agent.hostname} for scheduled incremental backup"
+        )
         return
 
     if r["ret"] == "failed" or agent.backup_running:
-        print(f"A backup job on {agent.hostname} is already running. Skipping")
+        logger.error(f"A backup job on {agent.hostname} is already running. Skipping")
         return
 
     job = BackupJob(
@@ -203,7 +205,7 @@ def incremental_backup_task(pk):
     )
     job.save()
 
-    print(f"Backup started on {agent.hostname}")
+    logger.info(f"Backup started on {agent.hostname}")
     return "ok"
 
 
@@ -212,7 +214,15 @@ def auto_offsite_task():
     agents = Agent.objects.filter(offsite_managed=True).filter(offsites_enabled=True)
 
     for agent in agents:
-        if agent.offsite_running or agent.size == agent.onsite_size:
+        if agent.offsite_running:
+            continue
+
+        r = agent.handle_archives()
+
+        if r == "err":
+            continue
+
+        if agent.raw_size == agent.raw_onsite_size:
             continue
 
         source = agent.onsite_dir + "/"

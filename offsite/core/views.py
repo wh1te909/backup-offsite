@@ -134,6 +134,11 @@ def start_offsite(request, pk):
     if agent.offsite_running:
         return notify_Error("An offsite job is already running.")
 
+    r = agent.handle_archives()
+
+    if r == "err":
+        return notify_Error("Unable to contact the agent")
+
     source = agent.onsite_dir + "/"
 
     rand_name = "".join(random.choice(string.ascii_letters) for _ in range(20))

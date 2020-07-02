@@ -86,6 +86,8 @@ class AgentSerializer(ModelSerializer):
     size = ReadOnlyField()
     onsite_dir = ReadOnlyField()
     onsite_size = ReadOnlyField()
+    raw_size = ReadOnlyField()
+    raw_onsite_size = ReadOnlyField()
     offsite_running = ReadOnlyField()
     backup_running = ReadOnlyField()
     offsitejobs = OffsiteJobSerializer(read_only=True, many=True)

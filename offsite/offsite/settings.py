@@ -7,7 +7,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 AUTH_USER_MODEL = "accounts.User"
 
-APP_VER = "0.0.18"
+APP_VER = "0.0.19"
 
 ASGI_APPLICATION = "offsite.routing.application"
 
@@ -99,3 +99,7 @@ USE_TZ = True
 STATIC_URL = "/static/"
 
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
+
+LOG_CONFIG = {
+    "handlers": [{"sink": os.path.join(BASE_DIR, "debug.log"), "serialize": False}]
+}

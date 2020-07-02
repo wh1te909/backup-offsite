@@ -1,4 +1,5 @@
 import os
+import shutil
 import zmq
 import pickle
 from time import sleep
@@ -9,6 +10,7 @@ import datetime as dt
 import pytz
 import random
 import string
+from loguru import logger
 
 from django.conf import settings
 from django.db import models
@@ -20,6 +22,9 @@ from .helpers import bytes2human
 from .decorators import handle_zmq
 
 TANK_ROOT = "/tank/offsites"
+ARCHIVE_ROOT = "/tank/archives"
+
+logger.configure(**settings.LOG_CONFIG)
 
 
 class Client(models.Model):
@@ -65,18 +70,28 @@ class Agent(models.Model):
 
     @property
     def path(self):
-        first = os.path.join(TANK_ROOT, self.client.folder)
-        return os.path.join(first, f"veeam/backups/{self.folder}")
+        return os.path.join(self.client.path, f"veeam/backups/{self.folder}")
 
     @property
-    def size(self):
+    def archive_path(self):
+        return os.path.join(ARCHIVE_ROOT, self.client.folder, self.folder)
+
+    @property
+    def raw_size(self):
         try:
             usage = sum(
                 os.path.getsize(os.path.join(dirpath, filename))
                 for dirpath, dirnames, filenames in os.walk(self.path)
                 for filename in filenames
             )
-            return bytes2human(usage)
+            return usage
+        except Exception:
+            return "n/a"
+
+    @property
+    def size(self):
+        try:
+            return bytes2human(self.raw_size)
         except Exception:
             return "n/a"
 
@@ -102,12 +117,18 @@ class Agent(models.Model):
                 return 99_999
 
     @property
-    def onsite_size(self):
+    def raw_onsite_size(self):
         if not self.details:
             return "n/a"
 
-        usage = sum(i["size"] for i in self.details["files"])
-        return bytes2human(usage)
+        return sum(i["size"] for i in self.details["files"])
+
+    @property
+    def onsite_size(self):
+        try:
+            return bytes2human(self.raw_onsite_size)
+        except Exception:
+            return "n/a"
 
     @property
     def onsite_dir(self):
@@ -248,6 +269,44 @@ class Agent(models.Model):
             return "error"
         else:
             return resp
+
+    def handle_archives(self):
+        r = self.salt_api_cmd(
+            func="tac_veeam.count_backups", timeout=10, arg=[self.onsite_dir]
+        )
+
+        if r == "error":
+            return "err"
+
+        ret = r.json()["return"][0][self.client.salt_id]
+
+        if not isinstance(ret, dict):
+            return "err"
+
+        try:
+            current = [
+                i["name"] for i in ret["files"] if not i["name"].endswith(".vbm")
+            ]
+        except Exception as e:
+            logger.error(e)
+            return "err"
+
+        with os.scandir(self.path) as it:
+            for f in it:
+                if (
+                    not f.name.startswith(".")
+                    and f.is_file()
+                    and not f.name.endswith(".vbm")
+                ):
+                    if f.name not in current:
+                        src = os.path.join(self.path, f.name)
+                        try:
+                            shutil.move(src, self.archive_path)
+                            logger.info(f"Moving {src} TO {self.archive_path}")
+                        except Exception as e:
+                            logger.error(e)
+
+        return "ok"
 
 
 STATUS_CHOICES = [

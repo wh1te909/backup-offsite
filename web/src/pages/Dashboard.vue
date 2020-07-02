@@ -92,7 +92,11 @@
                 <q-item v-for="agent in client.agents" :key="agent.id" class="q-my-sm">
                   <!-- icon -->
                   <q-item-section side>
-                    <q-icon name="cloud" v-if="agent.size === agent.onsite_size" color="positive" />
+                    <q-icon
+                      name="cloud"
+                      v-if="agent.raw_size === agent.raw_onsite_size"
+                      color="positive"
+                    />
                     <q-icon name="cloud" v-else color="warning" />
                   </q-item-section>
                   <!-- hostname -->
@@ -113,7 +117,7 @@
                   <!-- percent and progress meter -->
                   <q-item-section>
                     <q-linear-progress
-                      v-if="agent.size === agent.onsite_size"
+                      v-if="agent.raw_size === agent.raw_onsite_size"
                       stripe
                       size="xl"
                       :value="1"
@@ -125,7 +129,7 @@
                     <q-linear-progress
                       v-else
                       stripe
-                      :value="percentSynced(agent.size, agent.onsite_size)"
+                      :value="agent.raw_size / agent.raw_onsite_size"
                       size="xl"
                       color="warning"
                       track-color="primary"
@@ -133,7 +137,7 @@
                     >
                       <div
                         class="absolute-center flex flex-center text-black"
-                      >{{ progressLabel(agent.size, agent.onsite_size) }}</div>
+                      >{{ progressLabel(agent.raw_size, agent.raw_onsite_size) }}</div>
                     </q-linear-progress>
                   </q-item-section>
                 </q-item>
@@ -210,45 +214,7 @@ export default {
       });
     },
     progressLabel(size, onsite) {
-      let s = size.replace(/[^0-9.]/g, "");
-      let o = onsite.replace(/[^0-9.]/g, "");
-      let newSize;
-      let newOnsite;
-
-      if (size.endsWith("GB")) {
-        newSize = s;
-      } else if (size.endsWith("TB")) {
-        newSize = s * 1000;
-      }
-
-      if (onsite.endsWith("GB")) {
-        newOnsite = o;
-      } else if (onsite.endsWith("TB")) {
-        newOnsite = o * 1000;
-      }
-
-      return ((newSize / newOnsite) * 100).toFixed(2) + "%";
-    },
-    percentSynced(size, onsite) {
-      let s = size.replace(/[^0-9.]/g, "");
-      let o = onsite.replace(/[^0-9.]/g, "");
-
-      let newSize;
-      let newOnsite;
-
-      if (size.endsWith("GB")) {
-        newSize = s;
-      } else if (size.endsWith("TB")) {
-        newSize = s * 1000;
-      }
-
-      if (onsite.endsWith("GB")) {
-        newOnsite = o;
-      } else if (onsite.endsWith("TB")) {
-        newOnsite = o * 1000;
-      }
-
-      return newSize / newOnsite;
+      return ((size / onsite) * 100).toFixed(2) + "%";
     },
     getNewVer() {
       this.$store.dispatch("getNewVer");
