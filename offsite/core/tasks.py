@@ -53,7 +53,6 @@ def gather_info_task():
         )
 
         if r == "error":
-            logger.error(f"Unable to contact agent {agent.hostname}")
             continue
 
         ret = r.json()["return"][0][agent.client.salt_id]
@@ -64,8 +63,6 @@ def gather_info_task():
 
         agent.details = ret
         agent.save(update_fields=["details"])
-
-        sleep(1)
 
     return "ok"
 
@@ -82,13 +79,12 @@ def monitor_offsites_task():
             )
 
             if r == "error":
-                logger.error(f"Unable to contact agent {agent.hostname}")
                 continue
 
             ret = r.json()["return"][0][job.agent.client.salt_id]
 
             if not isinstance(ret, bool):
-                logger.error(f"{agent.hostname}: return type is not bool")
+                logger.error(f"{job.agent.hostname}: return type is not bool")
                 continue
 
             if ret:
@@ -97,7 +93,7 @@ def monitor_offsites_task():
                 job.status = "completed"
                 job.finished = djangotime.now()
                 job.save(update_fields=["status", "finished"])
-                logger.info(f"{agent.hostname} offsite job completed")
+                logger.info(f"{job.agent.hostname} offsite job completed")
                 sleep(1)
 
                 r = job.agent.salt_api_cmd(
@@ -157,7 +153,6 @@ def monitor_backups_task():
         r = agent.send_pub({"cmd": "info"}, 7)
 
         if r == "error":
-            logger.error(f"Unable to contact agent {agent.hostname}")
             continue
 
         if r["procs"]:
@@ -197,7 +192,7 @@ def incremental_backup_task(pk):
             sleep(1)
 
         elif r["ret"] == "failed" or agent.backup_running:
-            logger.error(
+            logger.warning(
                 f"A backup job on {agent.hostname} is already running. Skipping"
             )
             return
