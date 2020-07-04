@@ -183,17 +183,30 @@ def incremental_backup_task(pk):
 
     msg = {"cmd": "startbackup", "mode": mode}
 
-    r = agent.send_pub(msg, 7)
+    attempts = 0
+    while 1:
 
-    if r == "error":
-        logger.error(
-            f"Unable to contact {agent.hostname} for scheduled incremental backup"
-        )
-        return
+        r = agent.send_pub(msg, 7)
 
-    if r["ret"] == "failed" or agent.backup_running:
-        logger.error(f"A backup job on {agent.hostname} is already running. Skipping")
-        return
+        if r == "error":
+            attempts += 1
+            logger.error(
+                f"Unable to contact {agent.hostname} for scheduled incremental backup: attempt {attempts}"
+            )
+
+            sleep(1)
+
+        elif r["ret"] == "failed" or agent.backup_running:
+            logger.error(
+                f"A backup job on {agent.hostname} is already running. Skipping"
+            )
+            return
+
+        else:
+            attempts = 0
+
+        if attempts == 0 or attempts > 15:
+            break
 
     job = BackupJob(
         agent=agent,
