@@ -291,6 +291,9 @@ class Agent(models.Model):
             logger.error(e)
             return "err"
 
+        if not os.path.exists(self.archive_path):
+            os.makedirs(self.archive_path, exist_ok=True)
+
         with os.scandir(self.path) as it:
             for f in it:
                 if (
