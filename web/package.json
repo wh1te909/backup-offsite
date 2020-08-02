@@ -9,14 +9,14 @@
     "test": "echo \"No test specified\" && exit 0"
   },
   "dependencies": {
-    "@quasar/extras": "^1.8.2",
+    "@quasar/extras": "^1.9.3",
     "axios": "^0.19.2",
-    "quasar": "^1.12.8",
+    "quasar": "^1.12.13",
     "core-js": "^3.6.5",
     "dotenv": "^8.2.0"
   },
   "devDependencies": {
-    "@quasar/app": "^2.0.1",
+    "@quasar/app": "^2.0.6",
     "@quasar/cli": "^1.1.0"
   },
   "engines": {
@@ -25,8 +25,8 @@
     "yarn": ">= 1.21.1"
   },
   "browserslist": [
-    "last 4 Chrome versions",
-    "last 3 Firefox versions",
-    "last 3 Edge versions"
+    "last 2 Chrome versions",
+    "last 1 Firefox versions",
+    "last 2 Edge versions"
   ]
 }
