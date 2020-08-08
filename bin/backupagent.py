@@ -2,7 +2,7 @@ import os
 import socket
 import zmq
 import subprocess
-import pickle
+import msgpack
 import psutil
 import signal
 import logging
@@ -13,8 +13,7 @@ class BackupAgent:
     def __init__(self):
         self.agentid = self.get_agent_id()
         self.master = "offsite.tacticaltechs.com"
-        self.zmq_send = f"tcp://{self.master}:23954"
-        self.zmq_reply = f"tcp://{self.master}:23955"
+        self.zmq_conn = f"tcp://{self.master}:23956"
         self.veeam_exe = os.path.join(
             "C:\\Program Files\\Veeam\\Endpoint Backup", "Veeam.EndPoint.Manager.exe"
         )
@@ -84,20 +83,17 @@ class BackupAgent:
 
         context = zmq.Context()
 
-        subscriber = context.socket(zmq.SUB)
-        subscriber.connect(self.zmq_send)
-        subscriber.setsockopt_string(zmq.SUBSCRIBE, self.agentid)
-
-        sleep(0.5)
-        publisher = context.socket(zmq.PUB)
-        publisher.connect(self.zmq_reply)
+        sock = context.socket(zmq.DEALER)
+        sock.setsockopt(zmq.LINGER, 0)
+        sock.setsockopt_string(zmq.IDENTITY, self.agentid)
+        sock.connect(self.zmq_conn)
 
         while 1:
             try:
-                [topic, msg] = subscriber.recv_multipart()
-                data = pickle.loads(msg)
+                msg = sock.recv()
+                data = msgpack.loads(msg)
 
-                if topic and topic.decode() == self.agentid:
+                if data and data["target"] == self.agentid:
 
                     if data["cmd"] == "startbackup":
                         # make sure backup is not already running
@@ -121,11 +117,10 @@ class BackupAgent:
                                 "cmdline": cmdline,
                             }
 
-                        publisher.send_multipart(
-                            [self.agentid.encode(), pickle.dumps(payload)]
-                        )
+                        payload["id"] = self.agentid
+                        sock.send(msgpack.dumps(payload))
 
-                    if data["cmd"] == "cancelbackup":
+                    elif data["cmd"] == "cancelbackup":
 
                         try:
                             proc = psutil.Process(data["pid"])
@@ -138,30 +133,34 @@ class BackupAgent:
                             )
                             payload = {"ret": "success"}
 
-                        publisher.send_multipart(
-                            [self.agentid.encode(), pickle.dumps(payload)]
-                        )
+                        payload["id"] = self.agentid
+                        sock.send(msgpack.dumps(payload))
 
-                    if data["cmd"] == "info":
+                    elif data["cmd"] == "info":
                         procs = self.get_procs()
-                        payload = {"ret": "success", "procs": procs}
-                        publisher.send_multipart(
-                            [self.agentid.encode(), pickle.dumps(payload)]
-                        )
+                        payload = {"ret": "success", "procs": procs, "id": self.agentid}
+                        sock.send(msgpack.dumps(payload))
 
-                    if data["cmd"] == "halt":
-                        payload = {"ret": "success"}
-                        publisher.send_multipart(
-                            [self.agentid.encode(), pickle.dumps(payload)]
-                        )
+                    elif data["cmd"] == "ping":
+                        payload = {
+                            "ret": "success",
+                            "msg": f"{self.agentid} pong",
+                            "id": self.agentid,
+                        }
+                        sock.send(msgpack.dumps(payload))
+
+                    elif data["cmd"] == "halt":
+                        payload = {"ret": "success", "id": self.agentid}
+                        sock.send(msgpack.dumps(payload))
                         self.logger.info("Shutting down")
                         break
 
-            except Exception as e:
-                self.logger.error(e)
+                    del msg
 
-        subscriber.close()
-        publisher.close()
+            except Exception:
+                pass
+
+        sock.close()
         context.term()
 
 

@@ -10,6 +10,7 @@ import datetime as dt
 import pytz
 import random
 import string
+import msgpack
 from loguru import logger
 
 from django.conf import settings
@@ -170,70 +171,32 @@ class Agent(models.Model):
         else:
             return "Last synced: never"
 
-    @handle_zmq
-    def send_pub(self, msg, timeout=10):
+    def send_pub(self, msg, timeout=5):
+
+        msg["target"] = self.agentid
 
         context = zmq.Context()
 
-        # ports
-        pub_port = 23954
-        sub_port = 23955
+        socket = context.socket(zmq.DEALER)
+        socket.setsockopt(zmq.LINGER, 0)
+        socket.setsockopt_string(zmq.IDENTITY, self.agentid)
+        socket.connect("tcp://127.0.0.1:23957")
 
-        zmq_error = False
-        # sub for replies from agent
-        try:
-            subscriber = context.socket(zmq.SUB)
-            subscriber.bind("tcp://*:%s" % sub_port)
-            subscriber.setsockopt_string(zmq.SUBSCRIBE, self.agentid)
-        except Exception as e:
-            zmq_error = True
-            subscriber.close()
-
-        # publisher
-        try:
-            publisher = context.socket(zmq.PUB)
-            publisher.bind("tcp://*:%s" % pub_port)
-        except Exception as e:
-            zmq_error = True
-            publisher.close()
-
-        if zmq_error:
-            context.term()
-            return "inuse"
-
-        # poller
         poller = zmq.Poller()
-        poller.register(subscriber, zmq.POLLIN)
+        poller.register(socket, zmq.POLLIN)
 
-        # give time for subscribers to connect
-        sleep(2)
+        socket.send(msgpack.dumps(msg))
 
-        publisher.send_multipart([self.agentid.encode(), pickle.dumps(msg)])
+        socks = dict(poller.poll(timeout * 1000))
 
-        evts = poller.poll(timeout * 1000)
-
-        error = False
-
-        if not evts:
-            error = True
-
+        if socket in socks:
+            try:
+                message = socket.recv()
+                return msgpack.loads(message)
+            except IOError:
+                return "error"
         else:
-            [topic, data] = subscriber.recv_multipart()
-
-            if topic and topic.decode() == self.agentid:
-                resp = pickle.loads(data)
-            else:
-                error = True
-
-        # cleanup
-        subscriber.close()
-        publisher.close()
-        context.term()
-
-        if error:
             return "error"
-        else:
-            return resp
 
     def salt_api_cmd(self, **kwargs):
 

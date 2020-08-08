@@ -69,7 +69,6 @@ def start_backup(request):
     agent = get_object_or_404(Agent, pk=request.data["pk"])
 
     msg = {"cmd": "startbackup", "mode": request.data["mode"]}
-    #msg = {"cmd": "startbackup", "mode": "backup"}
     r = agent.send_pub(msg)
 
     if r == "error":
