@@ -1,4 +1,5 @@
 import os
+import sys
 import socket
 import zmq
 import subprocess
@@ -85,81 +86,90 @@ class BackupAgent:
 
         sock = context.socket(zmq.DEALER)
         sock.setsockopt(zmq.LINGER, 0)
+        sock.setsockopt(zmq.TCP_KEEPALIVE, 1)
+        sock.setsockopt(zmq.TCP_KEEPALIVE_IDLE, 300)
+        sock.setsockopt(zmq.TCP_KEEPALIVE_INTVL, 300)
         sock.setsockopt_string(zmq.IDENTITY, self.agentid)
         sock.connect(self.zmq_conn)
 
+        poll = zmq.Poller()
+        poll.register(sock, zmq.POLLIN)
+
         while 1:
             try:
-                msg = sock.recv()
-                data = msgpack.loads(msg)
+                sockets = dict(poll.poll(1000))
+                
+                if sock in sockets:
+                    msg = sock.recv()
+                    data = msgpack.loads(msg)
 
-                if data and data["target"] == self.agentid:
+                    if data and data["target"] == self.agentid:
 
-                    if data["cmd"] == "startbackup":
-                        # make sure backup is not already running
-                        running = self.backups_running()
+                        if data["cmd"] == "startbackup":
+                            # make sure backup is not already running
+                            running = self.backups_running()
 
-                        if running:
-                            payload = {"ret": "failed"}
-                        else:
-                            pid = self.start_backup(data["mode"])
+                            if running:
+                                payload = {"ret": "failed"}
+                            else:
+                                pid = self.start_backup(data["mode"])
 
-                            proc = psutil.Process(pid)
+                                proc = psutil.Process(pid)
 
-                            with proc.oneshot():
-                                name = proc.name()
-                                cmdline = proc.cmdline()
+                                with proc.oneshot():
+                                    name = proc.name()
+                                    cmdline = proc.cmdline()
 
+                                payload = {
+                                    "ret": "success",
+                                    "pid": pid,
+                                    "proc_name": name,
+                                    "cmdline": cmdline,
+                                }
+
+                            payload["id"] = self.agentid
+                            sock.send(msgpack.dumps(payload))
+
+                        elif data["cmd"] == "cancelbackup":
+
+                            try:
+                                proc = psutil.Process(data["pid"])
+                            except psutil.NoSuchProcess:
+                                payload = {"ret": "failed"}
+                            else:
+                                self.kill_proc(data["pid"])
+                                self.logger.info(
+                                    f"Cancelled backup with pid: {data['pid']}"
+                                )
+                                payload = {"ret": "success"}
+
+                            payload["id"] = self.agentid
+                            sock.send(msgpack.dumps(payload))
+
+                        elif data["cmd"] == "info":
+                            procs = self.get_procs()
+                            payload = {"ret": "success", "procs": procs, "id": self.agentid}
+                            sock.send(msgpack.dumps(payload))
+
+                        elif data["cmd"] == "ping":
                             payload = {
                                 "ret": "success",
-                                "pid": pid,
-                                "proc_name": name,
-                                "cmdline": cmdline,
+                                "msg": f"{self.agentid} pong",
+                                "id": self.agentid,
                             }
+                            sock.send(msgpack.dumps(payload))
 
-                        payload["id"] = self.agentid
-                        sock.send(msgpack.dumps(payload))
+                        elif data["cmd"] == "halt":
+                            payload = {"ret": "success", "id": self.agentid}
+                            sock.send(msgpack.dumps(payload))
+                            self.logger.info("Shutting down")
+                            break
 
-                    elif data["cmd"] == "cancelbackup":
-
-                        try:
-                            proc = psutil.Process(data["pid"])
-                        except psutil.NoSuchProcess:
-                            payload = {"ret": "failed"}
-                        else:
-                            self.kill_proc(data["pid"])
-                            self.logger.info(
-                                f"Cancelled backup with pid: {data['pid']}"
-                            )
-                            payload = {"ret": "success"}
-
-                        payload["id"] = self.agentid
-                        sock.send(msgpack.dumps(payload))
-
-                    elif data["cmd"] == "info":
-                        procs = self.get_procs()
-                        payload = {"ret": "success", "procs": procs, "id": self.agentid}
-                        sock.send(msgpack.dumps(payload))
-
-                    elif data["cmd"] == "ping":
-                        payload = {
-                            "ret": "success",
-                            "msg": f"{self.agentid} pong",
-                            "id": self.agentid,
-                        }
-                        sock.send(msgpack.dumps(payload))
-
-                    elif data["cmd"] == "halt":
-                        payload = {"ret": "success", "id": self.agentid}
-                        sock.send(msgpack.dumps(payload))
-                        self.logger.info("Shutting down")
-                        break
-
-                    del msg
-
-            except Exception:
-                pass
-
+                        del msg
+            except Exception as e:
+                self.logger.error(e)
+                break
+        
         sock.close()
         context.term()
 

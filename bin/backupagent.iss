@@ -1,5 +1,5 @@
 #define MyAppName "Tactical Backup"
-#define MyAppVersion "1.1.1"
+#define MyAppVersion "1.1.3"
 #define MyAppPublisher "Tactical Techs"
 #define MyAppURL "https://github.com/wh1te909"
 #define MyAppExeName "backupagent.exe"
