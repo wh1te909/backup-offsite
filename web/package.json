@@ -9,14 +9,14 @@
     "test": "echo \"No test specified\" && exit 0"
   },
   "dependencies": {
-    "@quasar/extras": "^1.9.3",
+    "@quasar/extras": "^1.9.5",
     "axios": "^0.19.2",
-    "quasar": "^1.12.13",
+    "quasar": "^1.13.1",
     "core-js": "^3.6.5",
     "dotenv": "^8.2.0"
   },
   "devDependencies": {
-    "@quasar/app": "^2.0.6",
+    "@quasar/app": "^2.0.8",
     "@quasar/cli": "^1.1.0"
   },
   "engines": {

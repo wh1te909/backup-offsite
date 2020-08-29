@@ -15,15 +15,15 @@ from loguru import logger
 
 from django.conf import settings
 from django.db import models
-from django.contrib.postgres.fields import JSONField, ArrayField
+from django.contrib.postgres.fields import ArrayField
 from django.utils import timezone as djangotime
 from django.db.models import Q
 
 from .helpers import bytes2human
 from .decorators import handle_zmq
 
-TANK_ROOT = "/tank/offsites"
-ARCHIVE_ROOT = "/tank/archives"
+TANK_ROOT = "/oldvm/tank/offsites"
+ARCHIVE_ROOT = "/oldvm/tank/archives"
 
 logger.configure(**settings.LOG_CONFIG)
 
@@ -52,7 +52,7 @@ class Agent(models.Model):
     )
     hostname = models.CharField(max_length=255, null=True, blank=True)
     folder = models.CharField(max_length=255, null=True, blank=True)
-    details = JSONField(null=True, blank=True)
+    details = models.JSONField(null=True, blank=True)
     day_hours = ArrayField(
         models.IntegerField(blank=True), default=get_default_day_hours
     )
@@ -61,7 +61,7 @@ class Agent(models.Model):
     limit_during_day = models.BooleanField(default=True)
     limit_during_night = models.BooleanField(default=True)
     agentid = models.CharField(max_length=255, null=True, blank=True)
-    backup_schedule = JSONField(null=True, blank=True)
+    backup_schedule = models.JSONField(null=True, blank=True)
     offsite_managed = models.BooleanField(default=True)
     offsites_enabled = models.BooleanField(default=True)
     backups_enabled = models.BooleanField(default=True)
@@ -133,7 +133,7 @@ class Agent(models.Model):
 
     @property
     def onsite_dir(self):
-        return os.path.join("/tank/veeam/backups", self.folder)
+        return os.path.join("/oldvm/tank/veeam/backups", self.folder)
 
     @property
     def offsite_running(self):
