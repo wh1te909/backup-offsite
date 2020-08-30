@@ -8,6 +8,7 @@ from django.db.models.signals import pre_save
 from django_celery_beat.models import CrontabSchedule, PeriodicTask
 from .models import Agent
 
+
 days = {
     "sun": 0,
     "mon": 1,
@@ -64,16 +65,10 @@ def handle_schedules(sender, instance: Agent, **kwargs):
                         args=json.dumps([instance.pk]),
                     )
 
-    if instance.pk is not None:
+        tasks = PeriodicTask.objects.filter(
+            name__startswith=f"{instance.hostname}-{instance.pk}-backup"
+        )
 
-        backup_enabled = sender.objects.get(pk=instance.pk).backups_enabled
-
-        if not backup_enabled == instance.backups_enabled:
-
-            tasks = PeriodicTask.objects.filter(
-                name__startswith=f"{instance.hostname}-{instance.pk}-backup"
-            )
-
-            for task in tasks:
-                task.enabled = instance.backups_enabled
-                task.save(update_fields=["enabled"])
+        for task in tasks:
+            task.enabled = instance.backups_enabled
+            task.save(update_fields=["enabled"])
