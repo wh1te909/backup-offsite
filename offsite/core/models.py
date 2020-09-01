@@ -133,7 +133,7 @@ class Agent(models.Model):
 
     @property
     def onsite_dir(self):
-        return os.path.join("/oldvm/tank/veeam/backups", self.folder)
+        return os.path.join("/tank/veeam/backups", self.folder)
 
     @property
     def offsite_running(self):
