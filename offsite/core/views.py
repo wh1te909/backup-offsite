@@ -143,7 +143,7 @@ def start_offsite(request, pk):
     rand_name = "".join(random.choice(string.ascii_letters) for _ in range(20))
     log_name = f"/offsitelogs/{rand_name}.log"
 
-    cmd = f"tacticaloffsite --source={source} --dest={agent.path} --limit={agent.rsync_bwlimit} --logfile={log_name}"
+    cmd = f"tacticaloffsite -source {source} -dest {agent.path} -limit {agent.rsync_bwlimit} -logfile {log_name}"
 
     r = agent.salt_api_cmd(
         timeout=10,
