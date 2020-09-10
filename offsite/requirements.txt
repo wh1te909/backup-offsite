@@ -1,6 +1,7 @@
 amqp==2.6.1
 appdirs==1.4.4
 asgiref==3.2.10
+asyncio-nats-client==0.11.0
 attrs==20.1.0
 autobahn==20.7.1
 Automat==20.2.0

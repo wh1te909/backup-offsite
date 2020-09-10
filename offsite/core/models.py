@@ -13,6 +13,10 @@ import string
 import msgpack
 from loguru import logger
 
+import asyncio
+from nats.aio.client import Client as NATS
+from nats.aio.errors import ErrConnectionClosed, ErrTimeout, ErrNoServers
+
 from django.conf import settings
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
@@ -171,7 +175,33 @@ class Agent(models.Model):
         else:
             return "Last synced: never"
 
+    async def send_nats(self, data, timeout=7):
+        nc = NATS()
+
+        options = {
+            "servers": "nats://127.0.0.1:4222",
+            "token": settings.NATS_TOKEN,
+            "connect_timeout": 3,
+            "max_reconnect_attempts": 2,
+        }
+
+        try:
+            await nc.connect(**options)
+        except Exception as e:
+            return "natsDown"
+
+        try:
+            msg = await nc.request(self.agentid, msgpack.dumps(data), timeout=timeout)
+        except ErrTimeout:
+            ret = "timeout"
+        else:
+            ret = msgpack.loads(msg.data)
+
+        await nc.close()
+        return ret
+
     def send_pub(self, msg, timeout=5):
+        # deprecated 9-10-2020, switched to NATS
 
         msg["target"] = self.agentid
 

@@ -1,3 +1,4 @@
+import asyncio
 import os
 import signal
 import psutil
@@ -150,9 +151,9 @@ def monitor_backups_task():
 
     for job in jobs:
         agent = job.agent
-        r = agent.send_pub({"cmd": "info"}, 7)
+        r = asyncio.run(agent.send_nats({"cmd": "info"}))
 
-        if r == "error":
+        if r == "timeout" or r == "natsDown":
             continue
 
         if r["procs"]:
@@ -164,8 +165,6 @@ def monitor_backups_task():
             job.finished = djangotime.now()
             job.status = "completed"
             job.save(update_fields=["finished", "status"])
-
-        sleep(0.5)
 
 
 @app.task
@@ -181,9 +180,13 @@ def incremental_backup_task(pk):
     attempts = 0
     while 1:
 
-        r = agent.send_pub(msg, 7)
+        r = asyncio.run(agent.send_nats(msg))
 
-        if r == "error":
+        if r == "natsDown":
+            logger.error("Nats is down")
+            return "Nats is down"
+
+        elif r == "timeout":
             attempts += 1
             logger.error(
                 f"Unable to contact {agent.hostname} for scheduled incremental backup: attempt {attempts}"

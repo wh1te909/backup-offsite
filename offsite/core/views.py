@@ -1,3 +1,4 @@
+import asyncio
 import psutil
 import zlib
 import base64
@@ -63,18 +64,19 @@ def view_offsite_output(request, pk):
     job = get_object_or_404(OffsiteJob, pk=pk)
     return Response(job.output)
 
-
 @api_view(["POST"])
 def start_backup(request):
     agent = get_object_or_404(Agent, pk=request.data["pk"])
 
     msg = {"cmd": "startbackup", "mode": request.data["mode"]}
-    r = agent.send_pub(msg)
 
-    if r == "error":
+    r = asyncio.run(agent.send_nats(msg))
+
+    if r == "timeout":
         return notify_Error("Unable to contact agent")
-
-    if r["ret"] == "failed" or agent.backup_running:
+    elif r == "natsDown":
+        return notify_Error("Nats is down")
+    elif r["ret"] == "failed" or agent.backup_running:
         return notify_Error("Backup is already running!")
 
     job = BackupJob(
