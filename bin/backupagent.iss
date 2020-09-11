@@ -1,5 +1,5 @@
 #define MyAppName "Tactical Backup"
-#define MyAppVersion "1.1.3"
+#define MyAppVersion "1.2.1"
 #define MyAppPublisher "Tactical Techs"
 #define MyAppURL "https://github.com/wh1te909"
 #define MyAppExeName "backupagent.exe"
@@ -31,7 +31,7 @@ WizardStyle=modern
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
-Source: "C:\Users\Public\Documents\backupagent\dist\backupagent.exe"; DestDir: "{app}"; BeforeInstall: StopService;
+Source: "C:\Users\Public\Documents\backupagent\backupagent.exe"; DestDir: "{app}"; BeforeInstall: StopService;
 Source: "C:\Users\Public\Documents\pubsub\bin\nssm.exe"; DestDir: "{app}";
 
 [Icons]

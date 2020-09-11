@@ -4,9 +4,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	nats "github.com/nats-io/nats.go"
-	"github.com/shirou/gopsutil/process"
-	"github.com/ugorji/go/codec"
 	"log"
 	"os"
 	"os/exec"
@@ -14,6 +11,10 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	nats "github.com/nats-io/nats.go"
+	"github.com/shirou/gopsutil/process"
+	"github.com/ugorji/go/codec"
 )
 
 var (
@@ -21,7 +22,8 @@ var (
 	logger   *log.Logger
 	endpoint string
 	token    string
-	version  = "1.2.0"
+	veeamExe = "Veeam.EndPoint.Manager.exe"
+	version  = "1.2.1"
 )
 
 type proc struct {
@@ -94,7 +96,8 @@ func main() {
 			logger.Fatal(err)
 		}
 
-		if data["cmd"] == "startbackup" {
+		switch data["cmd"] {
+		case "startbackup":
 
 			if backupIsRunning() {
 
@@ -116,7 +119,7 @@ func main() {
 				msg.Respond(response)
 
 			}
-		} else if data["cmd"] == "info" {
+		case "info":
 
 			procs := getProcs()
 
@@ -124,14 +127,14 @@ func main() {
 			ret.Encode(infoRet{Ret: "success", AgentID: agentid, Procs: procs})
 			msg.Respond(response)
 
-		} else if data["cmd"] == "ping" {
+		case "ping":
 
 			payload := fmt.Sprintf("%s pong", agentid)
 			ret := codec.NewEncoderBytes(&response, new(codec.MsgpackHandle))
 			ret.Encode(pongRet{Ret: "success", AgentID: agentid, Payload: payload})
 			msg.Respond(response)
 
-		} else if data["cmd"] == "halt" {
+		case "halt":
 
 			logger.Println("Shutting down")
 
@@ -164,7 +167,7 @@ func getAgentID() string {
 }
 
 func startBackup(mode string) int {
-	veeam := filepath.Join("C:\\Program Files\\Veeam\\Endpoint Backup", "Veeam.EndPoint.Manager.exe")
+	veeam := filepath.Join(os.Getenv("PROGRAMFILES"), "Veeam\\Endpoint Backup", veeamExe)
 	cmd := exec.Command(veeam)
 	cmd.Start()
 
@@ -178,7 +181,7 @@ func backupIsRunning() bool {
 		p, _ := process.NewProcess(pid)
 		name, _ := p.Name()
 
-		if name == "Veeam.EndPoint.Manager.exe" {
+		if name == veeamExe {
 			return true
 		}
 	}
@@ -198,7 +201,7 @@ func getProcs() procList {
 		ppid, _ := p.Ppid()
 		cmdline, _ := p.CmdlineSlice()
 
-		if name == "Veeam.EndPoint.Manager.exe" {
+		if name == veeamExe {
 			var i = proc{
 				name,
 				pid,
