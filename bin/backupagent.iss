@@ -1,5 +1,5 @@
 #define MyAppName "Tactical Backup"
-#define MyAppVersion "1.2.1"
+#define MyAppVersion "1.2.2"
 #define MyAppPublisher "Tactical Techs"
 #define MyAppURL "https://github.com/wh1te909"
 #define MyAppExeName "backupagent.exe"
@@ -31,17 +31,17 @@ WizardStyle=modern
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
-Source: "C:\Users\Public\Documents\backupagent\backupagent.exe"; DestDir: "{app}"; BeforeInstall: StopService;
+Source: "C:\Users\Public\Documents\backupagent\backupagent.exe"; DestDir: "{app}"; Flags: ignoreversion; BeforeInstall: StopService;
 Source: "C:\Users\Public\Documents\pubsub\bin\nssm.exe"; DestDir: "{app}";
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}";
 
 [Run]
-Filename: "{app}\{#NSSM}"; Parameters: "install backupagent ""{app}\{#MyAppExeName}"""; Check: not IsUpgrade;
-Filename: "{app}\{#NSSM}"; Parameters: "set backupagent DisplayName ""Tactical Backup"""; Check: not IsUpgrade;
-Filename: "{app}\{#NSSM}"; Parameters: "set backupagent Description ""Tactical Backup"""; Check: not IsUpgrade;
-Filename: "{app}\{#NSSM}"; Parameters: "set backupagent AppRestartDelay 5000"; Check: not IsUpgrade;
+Filename: "{app}\{#NSSM}"; Parameters: "install backupagent ""{app}\{#MyAppExeName}""";
+Filename: "{app}\{#NSSM}"; Parameters: "set backupagent DisplayName ""Tactical Backup""";
+Filename: "{app}\{#NSSM}"; Parameters: "set backupagent Description ""Tactical Backup""";
+Filename: "{app}\{#NSSM}"; Parameters: "set backupagent AppRestartDelay 5000";
 Filename: "{app}\{#NSSM}"; Parameters: "start backupagent";
 
 [UninstallRun]
@@ -52,11 +52,6 @@ Filename: "{app}\{#NSSM}"; Parameters: "remove backupagent confirm"; RunOnceId: 
 Type: filesandordirs; Name: "{app}";
 
 [Code]
-
-function IsUpgrade(): Boolean;
-begin
-  Result := RegKeyExists(HKLM, '{#SetupReg}');
-end;
 
 procedure StopService();
 var

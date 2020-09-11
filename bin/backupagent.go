@@ -23,7 +23,7 @@ var (
 	endpoint string
 	token    string
 	veeamExe = "Veeam.EndPoint.Manager.exe"
-	version  = "1.2.1"
+	version  = "1.2.2"
 )
 
 type proc struct {
@@ -168,7 +168,7 @@ func getAgentID() string {
 
 func startBackup(mode string) int {
 	veeam := filepath.Join(os.Getenv("PROGRAMFILES"), "Veeam\\Endpoint Backup", veeamExe)
-	cmd := exec.Command(veeam)
+	cmd := exec.Command(veeam, mode)
 	cmd.Start()
 
 	return cmd.Process.Pid
