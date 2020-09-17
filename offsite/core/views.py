@@ -93,7 +93,7 @@ def start_backup(request):
 
 @api_view()
 def info(request):
-    tank = psutil.disk_usage("/")
+    tank = psutil.disk_usage("/oldvm/tank/")
 
     used = bytes2human(tank.used)
     total = bytes2human(tank.total)
