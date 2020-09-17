@@ -11,12 +11,12 @@
   "dependencies": {
     "@quasar/extras": "^1.9.5",
     "axios": "^0.19.2",
-    "quasar": "^1.13.1",
+    "quasar": "^1.14.0",
     "core-js": "^3.6.5",
     "dotenv": "^8.2.0"
   },
   "devDependencies": {
-    "@quasar/app": "^2.0.8",
+    "@quasar/app": "^2.1.0",
     "@quasar/cli": "^1.1.0"
   },
   "engines": {
@@ -27,6 +27,6 @@
   "browserslist": [
     "last 2 Chrome versions",
     "last 1 Firefox versions",
-    "last 2 Edge versions"
+    "last 1 Edge versions"
   ]
 }

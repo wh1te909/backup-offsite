@@ -7,7 +7,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 AUTH_USER_MODEL = "accounts.User"
 
-APP_VER = "0.0.21"
+APP_VER = "0.0.22"
 
 ASGI_APPLICATION = "offsite.routing.application"
 
