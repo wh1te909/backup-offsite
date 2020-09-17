@@ -70,7 +70,7 @@ def start_backup(request):
 
     msg = {"cmd": "startbackup", "mode": request.data["mode"]}
 
-    r = asyncio.run(agent.send_nats(msg))
+    r = asyncio.run(agent.send_nats(msg, timeout=60))
 
     if r == "timeout":
         return notify_Error("Unable to contact agent")

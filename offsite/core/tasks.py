@@ -151,7 +151,7 @@ def monitor_backups_task():
 
     for job in jobs:
         agent = job.agent
-        r = asyncio.run(agent.send_nats({"cmd": "info"}))
+        r = asyncio.run(agent.send_nats({"cmd": "info"}, timeout=60))
 
         if r == "timeout" or r == "natsDown":
             continue
@@ -180,7 +180,7 @@ def incremental_backup_task(pk):
     attempts = 0
     while 1:
 
-        r = asyncio.run(agent.send_nats(msg))
+        r = asyncio.run(agent.send_nats(msg, timeout=60))
 
         if r == "natsDown":
             logger.error("Nats is down")
