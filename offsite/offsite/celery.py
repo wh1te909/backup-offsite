@@ -1,6 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 import os
 from celery import Celery
+from celery.schedules import crontab
 
 from django.conf import settings
 
@@ -19,6 +20,29 @@ app.task_serializer = "json"
 app.conf.task_track_started = True
 app.autodiscover_tasks()
 
+app.conf.beat_schedule = {
+    "gather-info": {
+        "task": "core.tasks.gather_info_task",
+        "schedule": crontab(minute="*/2"),
+    },
+    "monitor-offsites": {
+        "task": "core.tasks.monitor_offsites_task",
+        "schedule": crontab(minute="*"),
+    },
+    "monitor-backups": {
+        "task": "core.tasks.monitor_backups_task",
+        "schedule": crontab(minute="*"),
+    },
+    "get-offsite-logs": {
+        "task": "core.tasks.get_offsite_logs_task",
+        "schedule": crontab(minute="*/2"),
+    },
+    "auto-offsites": {
+        "task": "core.tasks.auto_offsite_task",
+        "schedule": crontab(minute="*/15"),
+    },
+}
+
 
 @app.task(bind=True)
 def debug_task(self):
@@ -27,21 +51,4 @@ def debug_task(self):
 
 @app.on_after_finalize.connect
 def setup_periodic_tasks(sender, **kwargs):
-
-    from core.tasks import (
-        gather_info_task,
-        monitor_offsites_task,
-        get_offsite_logs_task,
-        monitor_backups_task,
-        auto_offsite_task,
-    )
-
-    sender.add_periodic_task(60.0, gather_info_task.s())
-
-    sender.add_periodic_task(45.0, monitor_offsites_task.s())
-
-    sender.add_periodic_task(120.0, get_offsite_logs_task.s())
-
-    sender.add_periodic_task(30.0, monitor_backups_task.s())
-
-    sender.add_periodic_task(900.0, auto_offsite_task.s())
+    pass

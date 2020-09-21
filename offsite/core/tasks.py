@@ -225,7 +225,7 @@ def auto_offsite_task():
     agents = Agent.objects.filter(offsite_managed=True).filter(offsites_enabled=True)
 
     for agent in agents:
-        if agent.offsite_running:
+        if agent.offsite_running or agent.backup_running:
             continue
 
         r = agent.handle_archives()
