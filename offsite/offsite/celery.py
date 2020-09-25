@@ -23,19 +23,19 @@ app.autodiscover_tasks()
 app.conf.beat_schedule = {
     "gather-info": {
         "task": "core.tasks.gather_info_task",
-        "schedule": crontab(minute="*/2"),
+        "schedule": crontab(minute="*/15"),
     },
     "monitor-offsites": {
         "task": "core.tasks.monitor_offsites_task",
-        "schedule": crontab(minute="*"),
+        "schedule": crontab(minute="*/10"),
     },
     "monitor-backups": {
         "task": "core.tasks.monitor_backups_task",
-        "schedule": crontab(minute="*"),
+        "schedule": crontab(minute="*/5"),
     },
     "get-offsite-logs": {
         "task": "core.tasks.get_offsite_logs_task",
-        "schedule": crontab(minute="*/2"),
+        "schedule": crontab(minute="*/9"),
     },
     "auto-offsites": {
         "task": "core.tasks.auto_offsite_task",
