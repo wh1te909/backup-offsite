@@ -1,4 +1,9 @@
 //go:generate goversioninfo -icon=onit.ico -manifest=goversioninfo.exe.manifest -gofile=versioninfo.go
+
+// to build:
+// go generate
+// go build -ldflags="-X 'main.endpoint=nats.example.com' -X 'main.token=REPLACE_WITH_TOKEN'"
+// don't add .go file to build command or won't pickup the resource.syso
 package main
 
 import (
@@ -12,8 +17,8 @@ import (
 	"strings"
 	"time"
 
+	ps "github.com/elastic/go-sysinfo"
 	nats "github.com/nats-io/nats.go"
-	"github.com/shirou/gopsutil/process"
 	"github.com/ugorji/go/codec"
 )
 
@@ -23,13 +28,13 @@ var (
 	endpoint string
 	token    string
 	veeamExe = "Veeam.EndPoint.Manager.exe"
-	version  = "1.2.2"
+	version  = "1.3.0"
 )
 
 type proc struct {
 	Name    string   `json:"name"`
-	Pid     int32    `json:"pid"`
-	Ppid    int32    `json:"ppid"`
+	Pid     int      `json:"pid"`
+	Ppid    int      `json:"ppid"`
 	Cmdline []string `json:"cmdline"`
 }
 
@@ -96,12 +101,11 @@ func main() {
 			logger.Fatal(err)
 		}
 
+		ret := codec.NewEncoderBytes(&response, new(codec.MsgpackHandle))
+
 		switch data["cmd"] {
 		case "startbackup":
-
 			if backupIsRunning() {
-
-				ret := codec.NewEncoderBytes(&response, new(codec.MsgpackHandle))
 				ret.Encode(simpleRet{AgentID: agentid, Ret: "failed"})
 				msg.Respond(response)
 
@@ -110,35 +114,24 @@ func main() {
 				pid := startBackup(data["mode"])
 				logger.Println(fmt.Sprintf("Backup started with pid %d", pid))
 
-				p, _ := process.NewProcess(int32(pid))
-				name, _ := p.Name()
-				cmdline, _ := p.CmdlineSlice()
+				p, _ := ps.Process(pid)
+				info, _ := p.Info()
 
-				ret := codec.NewEncoderBytes(&response, new(codec.MsgpackHandle))
-				ret.Encode(backupRet{AgentID: agentid, Ret: "success", Pid: pid, Name: name, Cmdline: cmdline})
+				ret.Encode(backupRet{AgentID: agentid, Ret: "success", Pid: pid, Name: info.Name, Cmdline: info.Args})
 				msg.Respond(response)
 
 			}
 		case "info":
-
-			procs := getProcs()
-
-			ret := codec.NewEncoderBytes(&response, new(codec.MsgpackHandle))
-			ret.Encode(infoRet{Ret: "success", AgentID: agentid, Procs: procs})
+			ret.Encode(infoRet{Ret: "success", AgentID: agentid, Procs: getProcs()})
 			msg.Respond(response)
 
 		case "ping":
-
 			payload := fmt.Sprintf("%s pong", agentid)
-			ret := codec.NewEncoderBytes(&response, new(codec.MsgpackHandle))
 			ret.Encode(pongRet{Ret: "success", AgentID: agentid, Payload: payload})
 			msg.Respond(response)
 
 		case "halt":
-
 			logger.Println("Shutting down")
-
-			ret := codec.NewEncoderBytes(&response, new(codec.MsgpackHandle))
 			ret.Encode(simpleRet{Ret: "success", AgentID: agentid})
 			msg.Respond(response)
 
@@ -146,7 +139,6 @@ func main() {
 			nc.Close()
 			os.Exit(0)
 		}
-
 	})
 	nc.Flush()
 
@@ -175,38 +167,32 @@ func startBackup(mode string) int {
 }
 
 func backupIsRunning() bool {
-	pids, _ := process.Pids()
 
-	for _, pid := range pids {
-		p, _ := process.NewProcess(pid)
-		name, _ := p.Name()
+	procs, _ := ps.Processes()
 
-		if name == veeamExe {
+	for _, proc := range procs {
+		p, _ := proc.Info()
+		if p.Name == veeamExe {
 			return true
 		}
 	}
-
 	return false
 }
 
 func getProcs() procList {
 	ret := make([]proc, 0)
-	pids, _ := process.Pids()
 
-	for _, pid := range pids {
+	procs, _ := ps.Processes()
 
-		p, _ := process.NewProcess(pid)
-		name, _ := p.Name()
-		pid := p.Pid
-		ppid, _ := p.Ppid()
-		cmdline, _ := p.CmdlineSlice()
+	for _, process := range procs {
+		p, _ := process.Info()
+		if p.Name == veeamExe {
 
-		if name == veeamExe {
 			var i = proc{
-				name,
-				pid,
-				ppid,
-				cmdline,
+				p.Name,
+				p.PID,
+				p.PPID,
+				p.Args,
 			}
 			ret = append(ret, i)
 		}
