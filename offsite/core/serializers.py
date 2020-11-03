@@ -90,7 +90,6 @@ class AgentSerializer(ModelSerializer):
     raw_onsite_size = ReadOnlyField()
     offsite_running = ReadOnlyField()
     backup_running = ReadOnlyField()
-    offsitejobs = OffsiteJobSerializer(read_only=True, many=True)
     last_offsite_job = ReadOnlyField()
     client_name = ReadOnlyField(source="client.name")
     details = SerializerMethodField()

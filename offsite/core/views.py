@@ -49,7 +49,7 @@ def clients(request):
 
 @api_view()
 def offsite_jobs(request):
-    jobs = OffsiteJob.objects.all()
+    jobs = OffsiteJob.objects.select_related("agent__client").only("agent", "status", "started", "finished")
     return Response(OffsiteJobTableSerializer(jobs, many=True).data)
 
 
@@ -70,7 +70,7 @@ def start_backup(request):
 
     msg = {"cmd": "startbackup", "mode": request.data["mode"]}
 
-    r = asyncio.run(agent.send_nats(msg, timeout=20))
+    r = asyncio.run(agent.send_nats(msg, timeout=90))
 
     if r == "timeout":
         return notify_Error("Unable to contact agent")
