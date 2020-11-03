@@ -174,13 +174,16 @@ def incremental_backup_task(pk):
 
     agent = Agent.objects.get(pk=pk)
     mode = "backup"
+    timeout = 20
+    if agent.client.name == "MAP Arizona":
+        timeout = 120
 
     msg = {"cmd": "startbackup", "mode": mode}
 
     attempts = 0
     while 1:
 
-        r = asyncio.run(agent.send_nats(msg, timeout=20))
+        r = asyncio.run(agent.send_nats(msg, timeout=timeout))
 
         if r == "natsDown":
             logger.error("Nats is down")
