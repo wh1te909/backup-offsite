@@ -19,4 +19,5 @@ urlpatterns = [
     path("toggleoffsite", views.toggle_offsite),
     path("<int:pk>/offsitesettings/", views.get_offsite_settings),
     path("offsitesettings/", views.edit_offsite_settings),
+    path("debuglog/", views.debug_log),
 ]

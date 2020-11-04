@@ -20,6 +20,14 @@ const routes = [
         }
       },
       {
+        path: '/DebugLog',
+        name: 'DebugLog',
+        component: () => import('pages/DebugLog.vue'),
+        meta: {
+          requireAuth: true
+        }
+      },
+      {
         path: '/OffsiteJobs',
         name: 'OffsiteJobs',
         component: () => import('pages/OffsiteJobs.vue'),

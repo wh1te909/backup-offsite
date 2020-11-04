@@ -49,6 +49,14 @@
             <q-item-label>Agents</q-item-label>
           </q-item-section>
         </q-item>
+        <q-item to="/DebugLog" active-class="q-item-no-link-highlighting">
+          <q-item-section avatar>
+            <q-icon name="far fa-sticky-note" />
+          </q-item-section>
+          <q-item-section>
+            <q-item-label>Logs</q-item-label>
+          </q-item-section>
+        </q-item>
         <q-item to="/OffsiteJobs" active-class="q-item-no-link-highlighting">
           <q-item-section avatar>
             <q-icon name="fas fa-clipboard-list" />

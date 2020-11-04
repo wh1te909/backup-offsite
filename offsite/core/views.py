@@ -5,6 +5,7 @@ import base64
 import json
 import random
 import string
+import subprocess
 
 
 from django.conf import settings
@@ -29,6 +30,10 @@ from .serializers import (
 from .tasks import kill_local_rsync_task
 from .helpers import bytes2human, notify_Error
 
+@api_view()
+def debug_log(request):
+    r = subprocess.run(["/usr/bin/tac", "/app/offsite/debug.log"], capture_output=True)
+    return Response(r.stdout.decode("utf-8", errors="ignore"))
 
 @api_view()
 def version(request):
