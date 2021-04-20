@@ -3,7 +3,7 @@ appdirs==1.4.4
 asgiref==3.2.10
 asyncio-nats-client==0.11.2
 attrs==20.2.0
-autobahn==20.7.1
+autobahn==20.12.3
 Automat==20.2.0
 billiard==3.6.3.0
 black==19.10b0
