@@ -8,7 +8,7 @@ Automat==20.2.0
 billiard==3.6.3.0
 black==19.10b0
 celery==4.4.6
-certifi==2020.6.20
+certifi==2022.12.7
 cffi==1.14.3
 channels==2.4.0
 chardet==3.0.4
